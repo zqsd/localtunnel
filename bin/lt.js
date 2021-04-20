@@ -113,7 +113,7 @@ if (typeof argv.port !== 'number') {
       process.exit(code);
     });
     child.once('error', () => {
-      console.error(cmd + ': failed to execute');
+      console.error(argv.command + ': failed to execute');
       process.exit(1);
     });
   }
