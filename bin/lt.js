@@ -4,7 +4,6 @@
 const openurl = require('openurl');
 const yargs = require('yargs');
 const { spawn } = require('child_process');
-const { parseArgsStringToArgv } = require('string-argv');
 
 const localtunnel = require('../localtunnel');
 const { version } = require('../package');
@@ -29,10 +28,6 @@ const { argv } = yargs
     alias: 'local-host',
     describe: 'Tunnel traffic to this host instead of localhost, override Host header to this host',
   })
-  .option('e', {
-    alias: 'exec',
-    describe: 'Execute a command',
-  })
   .option('local-https', {
     describe: 'Tunnel traffic to a local HTTPS server',
   })
@@ -55,6 +50,7 @@ const { argv } = yargs
   .option('print-requests', {
     describe: 'Print basic request info',
   })
+  .command('- <command> [arguments..]', 'execute command')
   .require('port')
   .boolean('local-https')
   .boolean('allow-invalid-cert')
@@ -108,10 +104,8 @@ if (typeof argv.port !== 'number') {
     });
   }
 
-  if (argv.exec) {
-    const args = parseArgsStringToArgv(argv.exec);
-    const cmd = args.shift();
-    const child = spawn(cmd, args, {
+  if (argv.command) {
+    const child = spawn(argv.command, argv.arguments, {
       stdio: [process.stdin, process.stdout, process.stderr],
       env: Object.assign({}, process.env, {LT_URL: tunnel.url})
     });
@@ -121,6 +115,6 @@ if (typeof argv.port !== 'number') {
     child.once('error', () => {
       console.error(cmd + ': failed to execute');
       process.exit(1);
-    });    
+    });
   }
 })();
