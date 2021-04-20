@@ -3,6 +3,8 @@
 
 const openurl = require('openurl');
 const yargs = require('yargs');
+const { spawn } = require('child_process');
+const { parseArgsStringToArgv } = require('string-argv');
 
 const localtunnel = require('../localtunnel');
 const { version } = require('../package');
@@ -26,6 +28,10 @@ const { argv } = yargs
   .option('l', {
     alias: 'local-host',
     describe: 'Tunnel traffic to this host instead of localhost, override Host header to this host',
+  })
+  .option('e', {
+    alias: 'exec',
+    describe: 'Execute a command',
   })
   .option('local-https', {
     describe: 'Tunnel traffic to a local HTTPS server',
@@ -100,5 +106,21 @@ if (typeof argv.port !== 'number') {
     tunnel.on('request', info => {
       console.log(new Date().toString(), info.method, info.path);
     });
+  }
+
+  if (argv.exec) {
+    const args = parseArgsStringToArgv(argv.exec);
+    const cmd = args.shift();
+    const child = spawn(cmd, args, {
+      stdio: [process.stdin, process.stdout, process.stderr],
+      env: Object.assign({}, process.env, {LT_URL: tunnel.url})
+    });
+    child.once('exit', (code) => {
+      process.exit(code);
+    });
+    child.once('error', () => {
+      console.error(cmd + ': failed to execute');
+      process.exit(1);
+    });    
   }
 })();
